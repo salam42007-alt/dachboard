@@ -34,6 +34,7 @@
         <div class="user-profile hidden" id="userProfile">
           <img id="userAvatar" src="" alt="Avatar" class="user-avatar" />
           <span id="userName" class="user-name"></span>
+          <button class="btn btn--sm btn--accent" id="btnAdminPanel" style="display:none">⚙️ لوحة التحكم</button>
           <button class="btn btn--sm btn--ghost" id="btnLogout">خروج</button>
         </div>
       </div>
@@ -170,6 +171,110 @@
        TOAST CONTAINER
   ═══════════════════════════════════════ -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ═══════════════════════════════════════
+       ADMIN PANEL (مخفي – يظهر فقط للأونر)
+  ═══════════════════════════════════════ -->
+  <div class="admin-overlay hidden" id="adminOverlay">
+    <div class="admin-panel">
+
+      <!-- Panel Header -->
+      <div class="admin-panel__header">
+        <div class="admin-panel__title">
+          <span class="logo-icon">⬡</span>
+          <span>لوحة التحكم <strong>Admin</strong></span>
+          <span class="admin-badge-tag">OWNER</span>
+        </div>
+        <button class="admin-close" id="closeAdmin">✕</button>
+      </div>
+
+      <!-- Sidebar + Content -->
+      <div class="admin-body">
+
+        <!-- Sidebar Nav -->
+        <aside class="admin-sidebar">
+          <button class="admin-nav-btn active" data-tab="pending">
+            ⏳ طلبات المراجعة
+            <span class="admin-nav-badge" id="navBadgePending">0</span>
+          </button>
+          <button class="admin-nav-btn" data-tab="active">
+            ✅ السيرفرات النشطة
+          </button>
+          <button class="admin-nav-btn" data-tab="stats">
+            📊 الإحصائيات
+          </button>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="admin-content">
+
+          <!-- ─── TAB: PENDING ─── -->
+          <div class="admin-tab" id="tab-pending">
+            <div class="admin-tab__header">
+              <h3>⏳ طلبات تنتظر الموافقة</h3>
+              <button class="btn btn--ghost btn--sm" id="refreshPending">🔄 تحديث</button>
+            </div>
+            <div id="pendingList" class="admin-list"></div>
+            <div class="admin-empty hidden" id="pendingEmpty">
+              <span>🎉</span><p>لا توجد طلبات معلقة حالياً!</p>
+            </div>
+          </div>
+
+          <!-- ─── TAB: ACTIVE ─── -->
+          <div class="admin-tab hidden" id="tab-active">
+            <div class="admin-tab__header">
+              <h3>✅ السيرفرات المقبولة</h3>
+              <input type="text" id="adminSearch" placeholder="بحث…" class="admin-search-input" />
+            </div>
+            <div id="activeList" class="admin-list"></div>
+            <div class="admin-empty hidden" id="activeEmpty">
+              <span>🔭</span><p>لا توجد سيرفرات نشطة</p>
+            </div>
+          </div>
+
+          <!-- ─── TAB: STATS ─── -->
+          <div class="admin-tab hidden" id="tab-stats">
+            <h3 style="margin-bottom:1.5rem">📊 الإحصائيات</h3>
+            <div class="admin-stats-grid">
+              <div class="admin-stat admin-stat--blue">
+                <div class="admin-stat__icon">🖥️</div>
+                <div class="admin-stat__val" id="stTotal">–</div>
+                <div class="admin-stat__lbl">إجمالي السيرفرات</div>
+              </div>
+              <div class="admin-stat admin-stat--yellow">
+                <div class="admin-stat__icon">⏳</div>
+                <div class="admin-stat__val" id="stPending">–</div>
+                <div class="admin-stat__lbl">في الانتظار</div>
+              </div>
+              <div class="admin-stat admin-stat--green">
+                <div class="admin-stat__icon">✅</div>
+                <div class="admin-stat__val" id="stApproved">–</div>
+                <div class="admin-stat__lbl">مقبولة ونشطة</div>
+              </div>
+              <div class="admin-stat admin-stat--pink">
+                <div class="admin-stat__icon">📅</div>
+                <div class="admin-stat__val" id="stToday">–</div>
+                <div class="admin-stat__lbl">مضافة اليوم</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /admin-content -->
+      </div><!-- /admin-body -->
+    </div><!-- /admin-panel -->
+  </div><!-- /admin-overlay -->
+
+  <!-- Admin Delete Modal -->
+  <div class="modal-overlay hidden" id="adminDeleteModal">
+    <div class="modal modal--sm">
+      <h2 class="modal__title">🗑️ حذف من لوحة التحكم</h2>
+      <p class="modal__sub" id="adminDeleteMsg">هل تريد حذف هذا السيرفر نهائياً؟</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" id="adminCancelDelete">إلغاء</button>
+        <button class="btn btn--danger" id="adminConfirmDelete">نعم، احذف</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════════════════
        FOOTER
