@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiscBoard – اكتشف سيرفرات ديسكورد</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════════ -->
+  <nav class="navbar">
+    <div class="navbar__inner">
+
+      <!-- Logo -->
+      <a href="#" class="navbar__logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">Disc<strong>Board</strong></span>
+      </a>
+
+      <!-- Auth Zone -->
+      <div class="navbar__auth" id="authZone">
+        <!-- Not logged in -->
+        <button class="btn btn--discord" id="btnLogin">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+          تسجيل الدخول بديسكورد
+        </button>
+        <!-- Logged in (hidden by default) -->
+        <div class="user-profile hidden" id="userProfile">
+          <img id="userAvatar" src="" alt="Avatar" class="user-avatar" />
+          <span id="userName" class="user-name"></span>
+          <button class="btn btn--sm btn--ghost" id="btnLogout">خروج</button>
+        </div>
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════ -->
+  <header class="hero">
+    <div class="hero__glow hero__glow--1"></div>
+    <div class="hero__glow hero__glow--2"></div>
+    <div class="hero__content">
+      <h1 class="hero__title">اكتشف سيرفرات<br/><span class="gradient-text">ديسكورد</span> المميزة</h1>
+      <p class="hero__sub">آلاف السيرفرات تنتظرك – انضم الآن وابدأ رحلتك</p>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن سيرفر…" autocomplete="off" />
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       FILTERS
+  ═══════════════════════════════════════ -->
+  <section class="filters-section">
+    <div class="container">
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-cat="all">🌐 الكل</button>
+        <button class="filter-btn" data-cat="gaming">🎮 ألعاب</button>
+        <button class="filter-btn" data-cat="programming">💻 برمجة</button>
+        <button class="filter-btn" data-cat="anime">🎌 أنمي</button>
+        <button class="filter-btn" data-cat="music">🎵 موسيقى</button>
+        <button class="filter-btn" data-cat="education">📚 تعليم</button>
+        <button class="filter-btn" data-cat="art">🎨 فن</button>
+        <button class="filter-btn" data-cat="sports">⚽ رياضة</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       SERVERS GRID
+  ═══════════════════════════════════════ -->
+  <main class="main-section">
+    <div class="container">
+      <div class="grid-header">
+        <h2 class="grid-title" id="gridTitle">السيرفرات المميزة</h2>
+        <button class="btn btn--primary" id="btnAddServer">+ أضف سيرفرك</button>
+      </div>
+
+      <!-- Skeleton Loaders (shown while loading) -->
+      <div class="servers-grid" id="skeletonGrid">
+        <div class="card skeleton"></div>
+        <div class="card skeleton"></div>
+        <div class="card skeleton"></div>
+        <div class="card skeleton"></div>
+        <div class="card skeleton"></div>
+        <div class="card skeleton"></div>
+      </div>
+
+      <!-- Real Servers Grid -->
+      <div class="servers-grid hidden" id="serversGrid">
+        <!-- Cards injected by JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">🔭</div>
+        <p>لا توجد سيرفرات في هذا التصنيف حتى الآن</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════
+       ADD SERVER MODAL
+  ═══════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="addModal">
+    <div class="modal">
+      <button class="modal__close" id="closeAddModal">✕</button>
+      <h2 class="modal__title">➕ أضف سيرفرك</h2>
+      <p class="modal__sub">سيخضع السيرفر للمراجعة قبل النشر</p>
+      <div class="form-group">
+        <label>اسم السيرفر *</label>
+        <input type="text" id="formName" placeholder="مثال: سيرفر المبرمجين العرب" maxlength="60" />
+      </div>
+      <div class="form-group">
+        <label>الوصف *</label>
+        <textarea id="formDesc" placeholder="اوصف سيرفرك في جملة أو جملتين…" maxlength="200" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>التصنيف *</label>
+        <select id="formCat">
+          <option value="">-- اختر تصنيفاً --</option>
+          <option value="gaming">🎮 ألعاب</option>
+          <option value="programming">💻 برمجة</option>
+          <option value="anime">🎌 أنمي</option>
+          <option value="music">🎵 موسيقى</option>
+          <option value="education">📚 تعليم</option>
+          <option value="art">🎨 فن</option>
+          <option value="sports">⚽ رياضة</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>رابط الدعوة *</label>
+        <input type="url" id="formInvite" placeholder="https://discord.gg/xxxxxxx" />
+      </div>
+      <div class="form-group">
+        <label>رابط الأيقونة (اختياري)</label>
+        <input type="url" id="formIcon" placeholder="https://cdn.discordapp.com/…" />
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" id="cancelAdd">إلغاء</button>
+        <button class="btn btn--primary" id="submitAdd">إرسال للمراجعة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       DELETE CONFIRM MODAL
+  ═══════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="deleteModal">
+    <div class="modal modal--sm">
+      <h2 class="modal__title">🗑️ تأكيد الحذف</h2>
+      <p class="modal__sub">هل أنت متأكد أنك تريد حذف هذا السيرفر؟ لا يمكن التراجع عن هذا الإجراء.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" id="cancelDelete">إلغاء</button>
+        <button class="btn btn--danger" id="confirmDelete">نعم، احذف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       TOAST CONTAINER
+  ═══════════════════════════════════════ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ═══════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="container">
+      <p>صُنع بـ ❤️ لمجتمع ديسكورد العربي · <span class="footer-brand">DiscBoard</span></p>
+    </div>
+  </footer>
+
+  <script src="script.js" type="module"></script>
+</body>
+</html>
