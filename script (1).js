@@ -8,8 +8,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 /* ───────────────────────────────────────────────────────────────
    1. CONFIG  ← ضع بياناتك هنا
 ─────────────────────────────────────────────────────────────── */
-const SUPABASE_URL      = 'https://YOUR_PROJECT_ID.supabase.co';  // ← غيّر هذا
-const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';                  // ← غيّر هذا
+const SUPABASE_URL      = 'https://voagykakapoxiycbaxbm.supabase.co';  // ← غيّر هذا
+const SUPABASE_ANON_KEY = 'sb_publishable_Q6hATwZZS6C6_vCKyIRIkQ_VXhWQy8M';                  // ← غيّر هذا
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
