@@ -12,29 +12,33 @@ const SUPABASE_URL      = 'https://voagykakapoxiycbaxbm.supabase.co';  // ← غ
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYWd5a2FrYXBveGl5Y2JheGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MDQ3MjQsImV4cCI6MjA5MDI4MDcyNH0.MuAYGdHy5aQb2xLHsnb2NrP5P5QNUtPR9IPUgdUclJM';                  // ← غيّر هذا
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+ 
 /**
- * 🛡️ ADMIN WHITELIST — ضع Discord User ID الخاص بك هنا
- * كيف تعرف الـ ID؟ سجّل دخولك مرة واحدة ثم افتح Console وستجده مطبوعاً
+ * 🛡️ ADMIN WHITELIST
+ * كيف تحصل على UUID الخاص بك:
+ *   1. سجّل دخولك
+ *   2. افتح Console (F12)
+ *   3. ستجد: 🔑 Your Supabase UUID: xxxx-xxxx-...
+ *   4. انسخه وضعه هنا
  */
 const ADMIN_IDS = [
-  '720a9c00-b931-4011-8ca6-fcae961a377b',  // ← استبدل هذا بـ ID الديسكورد الخاص بك
+  'YOUR_SUPABASE_UUID_HERE', // ← UUID من Supabase (مش Discord ID)
 ];
-
+ 
 /* ───────────────────────────────────────────────────────────────
    2. STATE
 ─────────────────────────────────────────────────────────────── */
 let currentUser   = null;
-let allServers    = [];          // كل السيرفرات المجلوبة
+let allServers    = [];
 let activeFilter  = 'all';
 let searchQuery   = '';
-let pendingDelete = null;        // ID السيرفر المراد حذفه
-
+let pendingDelete = null;
+ 
 /* ───────────────────────────────────────────────────────────────
    3. DOM REFS
 ─────────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
-
+ 
 const btnLogin      = $('btnLogin');
 const btnLogout     = $('btnLogout');
 const userProfile   = $('userProfile');
@@ -50,7 +54,7 @@ const btnAddServer  = $('btnAddServer');
 const addModal      = $('addModal');
 const deleteModal   = $('deleteModal');
 const toastContainer= $('toastContainer');
-
+ 
 /* ───────────────────────────────────────────────────────────────
    4. SECURITY – XSS Protection
 ─────────────────────────────────────────────────────────────── */
@@ -63,99 +67,137 @@ function escHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    5. AUTH MANAGEMENT
+   🔧 FIX: showToast فقط عند SIGNED_IN الجديد مش عند كل تحميل
 ─────────────────────────────────────────────────────────────── */
-
-// تسجيل الدخول بديسكورد
 async function signIn() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'discord',
-    options: { redirectTo: window.location.href }
+    options: {
+      redirectTo: window.location.origin + window.location.pathname,
+      // 🔴 تأكد في Supabase Dashboard → Authentication → URL Configuration
+      // أضف هذا الرابط في "Redirect URLs"
+    }
   });
   if (error) showToast('❌ فشل تسجيل الدخول: ' + error.message, 'error');
 }
-
-// تسجيل الخروج
+ 
 async function signOut() {
   await supabase.auth.signOut();
   showToast('👋 تم تسجيل الخروج', 'info');
 }
-
-// مراقبة حالة المستخدم – تعمل فوراً عند أي تغيير
-supabase.auth.onAuthStateChange((_event, session) => {
+ 
+// 🔧 FIX: showWelcome parameter لتجنب Toast عند كل refresh
+supabase.auth.onAuthStateChange((event, session) => {
   currentUser = session?.user ?? null;
-  updateAuthUI();
-  renderVisible();   // أعد رسم الكروت لإظهار/إخفاء زر الحذف
+  updateAuthUI(event === 'SIGNED_IN');
+  renderVisible();
 });
-
-function updateAuthUI() {
+ 
+function updateAuthUI(showWelcome = false) {
+  const adminBtn = $('btnAdminPanel');
+ 
   if (currentUser) {
     const meta   = currentUser.user_metadata;
     const avatar = meta?.avatar_url || '';
-    const name   = meta?.full_name || meta?.name || 'مستخدم';
-
+    const name   = meta?.full_name || meta?.name || meta?.user_name || 'مستخدم';
+ 
     userAvatar.src = avatar;
     userName.textContent = name;
     userProfile.classList.remove('hidden');
     btnLogin.classList.add('hidden');
-
-    // Show admin button only for owners
-    const adminBtn = $('btnAdminPanel');
+ 
+    // 🔧 FIX: طباعة UUID الصحيح في Console لسهولة الإعداد
+    console.log('🔑 Your Supabase UUID:', currentUser.id);
+    console.log('📋 Discord Username:', meta?.full_name || meta?.name);
+ 
+    // 🔧 FIX: المقارنة بـ currentUser.id (Supabase UUID) وهو صحيح
     if (ADMIN_IDS.includes(currentUser.id)) {
       adminBtn.style.display = 'inline-flex';
     } else {
       adminBtn.style.display = 'none';
     }
-    showToast('✅ مرحباً ' + name, 'success');
+ 
+    if (showWelcome) showToast('✅ مرحباً ' + name, 'success');
+ 
   } else {
     userProfile.classList.add('hidden');
     btnLogin.classList.remove('hidden');
-    $('btnAdminPanel').style.display = 'none';
+    adminBtn.style.display = 'none';
   }
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    6. DATA FETCHING
+   🔧 FIX: إضافة تشخيص واضح لأسباب عدم ظهور السيرفرات
 ─────────────────────────────────────────────────────────────── */
 async function fetchServers() {
   showSkeleton(true);
-
+ 
   const { data, error } = await supabase
     .from('servers')
     .select('*')
     .eq('approved', true)
     .order('created_at', { ascending: false });
-
+ 
   showSkeleton(false);
-
+ 
   if (error) {
-    showToast('❌ حدث خطأ في جلب البيانات', 'error');
-    console.error(error);
+    // 🔧 FIX: رسالة خطأ تفصيلية تساعد في التشخيص
+    console.error('❌ Supabase fetch error:', error);
+ 
+    if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+      showToast('❌ خطأ في الـ API Key — تحقق من SUPABASE_ANON_KEY', 'error');
+    } else if (error.code === '42501' || error.message?.includes('RLS')) {
+      showToast('❌ خطأ في صلاحيات قاعدة البيانات (RLS) — راجع التعليمات أدناه', 'error');
+      console.warn(`
+🔴 RLS FIX NEEDED — شغّل هذا في Supabase SQL Editor:
+-- السماح للجميع بقراءة السيرفرات المقبولة
+CREATE POLICY "public read approved servers"
+ON servers FOR SELECT
+USING (approved = true);
+ 
+-- السماح للمسجلين بإضافة سيرفرات
+CREATE POLICY "auth users can insert"
+ON servers FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = owner_id);
+ 
+-- السماح للمالك بحذف سيرفره
+CREATE POLICY "owner can delete"
+ON servers FOR DELETE
+TO authenticated
+USING (auth.uid() = owner_id);
+      `);
+    } else {
+      showToast('❌ حدث خطأ في جلب البيانات: ' + error.message, 'error');
+    }
     return;
   }
-
+ 
+  console.log(`✅ Fetched ${data?.length || 0} approved servers`);
   allServers = data || [];
   renderVisible();
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    7. FILTER & SEARCH (client-side)
 ─────────────────────────────────────────────────────────────── */
 function getVisible() {
   return allServers.filter(s => {
-    const matchCat  = activeFilter === 'all' || s.category === activeFilter;
-    const q         = searchQuery.trim().toLowerCase();
+    const matchCat    = activeFilter === 'all' || s.category === activeFilter;
+    const q           = searchQuery.trim().toLowerCase();
     const matchSearch = !q ||
-      (s.name  || '').toLowerCase().includes(q) ||
+      (s.name        || '').toLowerCase().includes(q) ||
       (s.description || '').toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
-   8. BUILD CARDS (DOM Manipulation)
+   8. BUILD CARDS
 ─────────────────────────────────────────────────────────────── */
 const CAT_LABELS = {
   gaming:      '🎮 ألعاب',
@@ -166,8 +208,7 @@ const CAT_LABELS = {
   art:         '🎨 فن',
   sports:      '⚽ رياضة',
 };
-
-// ألوان الأيقونة الاحتياطية بناءً على أول حرف
+ 
 const PALETTE = [
   '#5865f2','#57f287','#eb459e','#faa61a','#ed4245',
   '#00b0f4','#f47fff','#3ba55c','#e67e22','#9b59b6'
@@ -177,7 +218,7 @@ function avatarColor(name) {
   for (let i = 0; i < (name || '').length; i++) h += name.charCodeAt(i);
   return PALETTE[h % PALETTE.length];
 }
-
+ 
 function buildCard(server) {
   const isOwner = currentUser && currentUser.id === server.owner_id;
   const name    = escHtml(server.name || 'بدون اسم');
@@ -186,22 +227,23 @@ function buildCard(server) {
   const invite  = server.invite_url ? escHtml(server.invite_url) : '#';
   const color   = avatarColor(server.name);
   const letter  = (server.name || '?')[0].toUpperCase();
-
+ 
   const card = document.createElement('div');
   card.className = 'card';
   card.dataset.id = server.id;
-
-  // Construct icon HTML
+ 
   const iconHtml = server.icon_url
     ? `<img class="card__icon" src="${escHtml(server.icon_url)}" alt="${name}"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
        <div class="card__icon-fallback" style="display:none;background:${color}">${letter}</div>`
     : `<div class="card__icon-fallback" style="background:${color}">${letter}</div>`;
-
-  const deleteBtn = isOwner
+ 
+  // 🔧 FIX: Admin يشوف زر الحذف أيضاً
+  const isAdmin  = ADMIN_IDS.includes(currentUser?.id);
+  const deleteBtn = (isOwner || isAdmin)
     ? `<button class="card__delete" data-id="${server.id}" title="حذف السيرفر">🗑️</button>`
     : '';
-
+ 
   card.innerHTML = `
     <div class="card__top">
       <div class="card__icon-wrap">
@@ -219,8 +261,7 @@ function buildCard(server) {
       انضم الآن ←
     </a>
   `;
-
-  // Delete event
+ 
   const delBtn = card.querySelector('.card__delete');
   if (delBtn) {
     delBtn.addEventListener('click', e => {
@@ -228,14 +269,14 @@ function buildCard(server) {
       openDeleteModal(server.id);
     });
   }
-
+ 
   return card;
 }
-
+ 
 function renderVisible() {
   const visible = getVisible();
   serversGrid.innerHTML = '';
-
+ 
   if (visible.length === 0) {
     serversGrid.classList.add('hidden');
     emptyState.classList.remove('hidden');
@@ -248,12 +289,13 @@ function renderVisible() {
       serversGrid.appendChild(card);
     });
   }
-
-  // Update title
-  const catLabel = activeFilter === 'all' ? 'السيرفرات المميزة' : (CAT_LABELS[activeFilter] || activeFilter);
+ 
+  const catLabel = activeFilter === 'all'
+    ? 'السيرفرات المميزة'
+    : (CAT_LABELS[activeFilter] || activeFilter);
   gridTitle.textContent = catLabel + (searchQuery ? ` · "${searchQuery}"` : '') + ` (${visible.length})`;
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    9. SKELETON LOADER
 ─────────────────────────────────────────────────────────────── */
@@ -266,7 +308,7 @@ function showSkeleton(show) {
     skeletonGrid.classList.add('hidden');
   }
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    10. ADD SERVER
 ─────────────────────────────────────────────────────────────── */
@@ -277,19 +319,20 @@ function openAddModal() {
   }
   addModal.classList.remove('hidden');
 }
+ 
 function closeAddModal() {
   addModal.classList.add('hidden');
-  // Reset form
-  ['formName','formDesc','formCat','formInvite','formIcon'].forEach(id => $( id).value = '');
+  // 🔧 FIX: إزالة المسافة الزائدة في $( id)
+  ['formName','formDesc','formCat','formInvite','formIcon'].forEach(id => $(id).value = '');
 }
-
+ 
 async function submitServer() {
-  const name    = $('formName').value.trim();
-  const desc    = $('formDesc').value.trim();
-  const cat     = $('formCat').value;
-  const invite  = $('formInvite').value.trim();
-  const icon    = $('formIcon').value.trim();
-
+  const name   = $('formName').value.trim();
+  const desc   = $('formDesc').value.trim();
+  const cat    = $('formCat').value;
+  const invite = $('formInvite').value.trim();
+  const icon   = $('formIcon').value.trim();
+ 
   if (!name || !desc || !cat || !invite) {
     showToast('⚠️ يرجى ملء جميع الحقول المطلوبة', 'error');
     return;
@@ -298,25 +341,26 @@ async function submitServer() {
     showToast('⚠️ رابط الدعوة يجب أن يبدأ بـ https://discord.gg/', 'error');
     return;
   }
-
+ 
   const { error } = await supabase.from('servers').insert({
     name,
     description: desc,
-    category: cat,
-    invite_url: invite,
-    icon_url:   icon || null,
-    owner_id:   currentUser.id,
-    approved:   false,
+    category:    cat,
+    invite_url:  invite,
+    icon_url:    icon || null,
+    owner_id:    currentUser.id,
+    approved:    false,
   });
-
+ 
   if (error) {
+    console.error('Insert error:', error);
     showToast('❌ فشل إضافة السيرفر: ' + error.message, 'error');
     return;
   }
   showToast('✅ تم إرسال السيرفر للمراجعة بنجاح!', 'success');
   closeAddModal();
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    11. DELETE SERVER
 ─────────────────────────────────────────────────────────────── */
@@ -328,28 +372,32 @@ function closeDeleteModal() {
   pendingDelete = null;
   deleteModal.classList.add('hidden');
 }
-
+ 
 async function deleteServer() {
   if (!pendingDelete) return;
-
-  const { error } = await supabase
-    .from('servers')
-    .delete()
-    .eq('id', pendingDelete)
-    .eq('owner_id', currentUser.id);  // حماية: فقط المالك يحذف
-
+ 
+  const isAdmin = ADMIN_IDS.includes(currentUser?.id);
+ 
+  let query = supabase.from('servers').delete().eq('id', pendingDelete);
+ 
+  // 🔧 FIX: Admin يحذف أي سيرفر، المالك فقط سيرفره
+  if (!isAdmin) {
+    query = query.eq('owner_id', currentUser.id);
+  }
+ 
+  const { error } = await query;
+ 
   closeDeleteModal();
-
+ 
   if (error) {
     showToast('❌ فشل الحذف: ' + error.message, 'error');
     return;
   }
-  // Remove locally
   allServers = allServers.filter(s => s.id !== pendingDelete);
   renderVisible();
   showToast('🗑️ تم حذف السيرفر بنجاح', 'info');
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    12. TOAST SYSTEM
 ─────────────────────────────────────────────────────────────── */
@@ -359,48 +407,64 @@ function showToast(message, type = 'info', duration = 3500) {
   toast.className = `toast toast--${type}`;
   toast.innerHTML = `<span>${icons[type] || ''}</span><span>${escHtml(message)}</span>`;
   toastContainer.appendChild(toast);
-
+ 
   setTimeout(() => {
     toast.classList.add('removing');
     setTimeout(() => toast.remove(), 280);
   }, duration);
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
-   13. REALTIME – Live Updates
+   13. REALTIME
+   🔧 FIX: إزالة filter غير المدعوم — الفلترة تصير بالكود
 ─────────────────────────────────────────────────────────────── */
 function subscribeRealtime() {
   supabase
     .channel('public:servers')
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'servers', filter: 'approved=eq.true' },
+      { event: '*', schema: 'public', table: 'servers' }, // ← أزلنا filter هنا
       payload => {
         const { eventType, new: newRow, old: oldRow } = payload;
-
+ 
         if (eventType === 'INSERT') {
-          allServers.unshift(newRow);
-          showToast('🆕 سيرفر جديد تمت إضافته!', 'info');
+          // 🔧 FIX: فقط السيرفرات المقبولة تظهر في الـ grid
+          if (newRow.approved) {
+            allServers.unshift(newRow);
+            showToast('🆕 سيرفر جديد تمت إضافته!', 'info');
+          }
         } else if (eventType === 'UPDATE') {
-          allServers = allServers.map(s => s.id === newRow.id ? newRow : s);
+          if (newRow.approved) {
+            const exists = allServers.find(s => s.id === newRow.id);
+            if (exists) {
+              allServers = allServers.map(s => s.id === newRow.id ? newRow : s);
+            } else {
+              // سيرفر تمت الموافقة عليه الآن
+              allServers.unshift(newRow);
+              showToast('🆕 سيرفر جديد تمت الموافقة عليه!', 'info');
+            }
+          } else {
+            // سيرفر تم رفضه — أزله من القائمة
+            allServers = allServers.filter(s => s.id !== newRow.id);
+          }
         } else if (eventType === 'DELETE') {
           allServers = allServers.filter(s => s.id !== oldRow.id);
         }
+ 
         renderVisible();
       }
     )
-    .subscribe();
+    .subscribe(status => {
+      console.log('🔌 Realtime status:', status);
+    });
 }
-
+ 
 /* ───────────────────────────────────────────────────────────────
    14. EVENT LISTENERS
 ─────────────────────────────────────────────────────────────── */
-
-// Auth
 btnLogin.addEventListener('click', signIn);
 btnLogout.addEventListener('click', signOut);
-
-// Search (debounced 250ms)
+ 
 let searchTimer;
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimer);
@@ -409,8 +473,7 @@ searchInput.addEventListener('input', () => {
     renderVisible();
   }, 250);
 });
-
-// Filter tabs
+ 
 filtersEl.addEventListener('click', e => {
   const btn = e.target.closest('.filter-btn');
   if (!btn) return;
@@ -419,115 +482,122 @@ filtersEl.addEventListener('click', e => {
   activeFilter = btn.dataset.cat;
   renderVisible();
 });
-
-// Add modal
+ 
 btnAddServer.addEventListener('click', openAddModal);
 $('closeAddModal').addEventListener('click', closeAddModal);
 $('cancelAdd').addEventListener('click', closeAddModal);
 $('submitAdd').addEventListener('click', submitServer);
 addModal.addEventListener('click', e => { if (e.target === addModal) closeAddModal(); });
-
-// Delete modal
+ 
 $('cancelDelete').addEventListener('click', closeDeleteModal);
 $('confirmDelete').addEventListener('click', deleteServer);
 deleteModal.addEventListener('click', e => { if (e.target === deleteModal) closeDeleteModal(); });
-
-// Close modals on Escape
+ 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeAddModal(); closeDeleteModal(); }
 });
-
+ 
 /* ───────────────────────────────────────────────────────────────
    15. INIT
 ─────────────────────────────────────────────────────────────── */
 (async function init() {
-  // Check existing session
   const { data: { session } } = await supabase.auth.getSession();
   currentUser = session?.user ?? null;
-  updateAuthUI();
-
-  // Load servers
+  updateAuthUI(false); // false = لا تعرض Toast عند أول تحميل
+ 
   await fetchServers();
-
-  // Subscribe to real-time updates
   subscribeRealtime();
 })();
-
+ 
 /* ═══════════════════════════════════════════════════════════════
-   ██████████  ADMIN PANEL MODULE  ██████████
-   مدمج داخل script.js – يعمل فقط للأونر
+   ADMIN PANEL MODULE
 ═══════════════════════════════════════════════════════════════ */
-
-/* ── Admin State ── */
+ 
 let adminPending  = [];
 let adminActive   = [];
 let adminDeleteId = null;
 let adminSearchQ  = '';
-
-/* ── Admin DOM ── */
+ 
 const adminOverlay    = $('adminOverlay');
 const adminDeleteModal= $('adminDeleteModal');
 const adminDeleteMsg  = $('adminDeleteMsg');
 const navBadgePending = $('navBadgePending');
-
-/* ── Open / Close Panel ── */
+ 
 function openAdminPanel() {
+  // 🔧 FIX: تحقق من الصلاحيات قبل فتح اللوحة
+  if (!currentUser) {
+    showToast('🔐 يجب تسجيل الدخول أولاً', 'error');
+    return;
+  }
+  if (!ADMIN_IDS.includes(currentUser.id)) {
+    showToast('⛔ ليس لديك صلاحية الوصول للوحة التحكم', 'error');
+    console.warn('Unauthorized access attempt. Your UUID:', currentUser.id);
+    return;
+  }
   adminOverlay.classList.remove('hidden');
   loadAdminData();
 }
+ 
 function closeAdminPanel() {
   adminOverlay.classList.add('hidden');
 }
-
-/* ── Tab switching ── */
+ 
 function switchAdminTab(tabName) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
   document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
   $('tab-' + tabName).classList.remove('hidden');
   document.querySelector(`.admin-nav-btn[data-tab="${tabName}"]`).classList.add('active');
 }
-
-/* ── Load all admin data ── */
+ 
 async function loadAdminData() {
   await Promise.all([loadAdminPending(), loadAdminActive()]);
   updateAdminStats();
 }
-
+ 
 async function loadAdminPending() {
   const { data, error } = await supabase
     .from('servers').select('*')
     .eq('approved', false)
     .order('created_at', { ascending: false });
-  if (error) { showToast('❌ خطأ في جلب الطلبات', 'error'); return; }
+ 
+  if (error) {
+    console.error('Admin pending error:', error);
+    showToast('❌ خطأ في جلب الطلبات — تحقق من RLS policies', 'error');
+    return;
+  }
   adminPending = data || [];
   renderAdminPending();
 }
-
+ 
 async function loadAdminActive() {
   const { data, error } = await supabase
     .from('servers').select('*')
     .eq('approved', true)
     .order('created_at', { ascending: false });
-  if (error) { showToast('❌ خطأ في جلب السيرفرات', 'error'); return; }
+ 
+  if (error) {
+    console.error('Admin active error:', error);
+    showToast('❌ خطأ في جلب السيرفرات', 'error');
+    return;
+  }
   adminActive = data || [];
   renderAdminActive();
 }
-
-/* ── Stats ── */
+ 
 function updateAdminStats() {
   const today = new Date().toISOString().split('T')[0];
   const todayCount = [...adminPending, ...adminActive]
     .filter(s => s.created_at?.startsWith(today)).length;
-
+ 
   animateAdminCount($('stTotal'),    adminPending.length + adminActive.length);
   animateAdminCount($('stPending'),  adminPending.length);
   animateAdminCount($('stApproved'), adminActive.length);
   animateAdminCount($('stToday'),    todayCount);
-
+ 
   navBadgePending.textContent = adminPending.length;
   navBadgePending.style.display = adminPending.length === 0 ? 'none' : 'flex';
 }
-
+ 
 function animateAdminCount(el, target) {
   if (!el) return;
   let cur = 0;
@@ -538,8 +608,7 @@ function animateAdminCount(el, target) {
     if (cur >= target) clearInterval(t);
   }, 40);
 }
-
-/* ── Render Pending ── */
+ 
 function renderAdminPending() {
   const list  = $('pendingList');
   const empty = $('pendingEmpty');
@@ -552,8 +621,7 @@ function renderAdminPending() {
     list.appendChild(row);
   });
 }
-
-/* ── Render Active ── */
+ 
 function renderAdminActive() {
   const list  = $('activeList');
   const empty = $('activeEmpty');
@@ -561,7 +629,7 @@ function renderAdminActive() {
   const filtered = adminActive.filter(s => {
     const q = adminSearchQ.toLowerCase();
     return !q ||
-      (s.name || '').toLowerCase().includes(q) ||
+      (s.name        || '').toLowerCase().includes(q) ||
       (s.description || '').toLowerCase().includes(q);
   });
   if (filtered.length === 0) { empty.classList.remove('hidden'); return; }
@@ -572,15 +640,14 @@ function renderAdminActive() {
     list.appendChild(row);
   });
 }
-
-/* ── Build Admin Row ── */
+ 
 const PALETTE_A = ['#5865f2','#57f287','#eb459e','#faa61a','#ed4245','#00b0f4','#3ba55c','#f47fff'];
 function adminAvatarColor(name) {
   let h = 0;
   for (let i = 0; i < (name || '').length; i++) h += name.charCodeAt(i);
   return PALETTE_A[h % PALETTE_A.length];
 }
-
+ 
 function buildAdminRow(server, mode) {
   const name   = escHtml(server.name || 'بدون اسم');
   const desc   = escHtml(server.description || '–');
@@ -588,18 +655,18 @@ function buildAdminRow(server, mode) {
   const color  = adminAvatarColor(server.name);
   const letter = (server.name || '?')[0].toUpperCase();
   const date   = server.created_at ? new Date(server.created_at).toLocaleDateString('ar-EG') : '';
-
+ 
   const iconHtml = server.icon_url
     ? `<img class="admin-row__icon" src="${escHtml(server.icon_url)}" alt="${name}"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
        <div class="admin-row__icon-fb" style="display:none;background:${color}">${letter}</div>`
     : `<div class="admin-row__icon-fb" style="background:${color}">${letter}</div>`;
-
+ 
   const actions = mode === 'pending'
     ? `<button class="btn--approve" data-id="${server.id}">✅ قبول</button>
        <button class="btn--reject"  data-id="${server.id}">❌ رفض</button>`
     : `<button class="btn--reject"  data-id="${server.id}" data-name="${name}">🗑️ حذف</button>`;
-
+ 
   const row = document.createElement('div');
   row.className = 'admin-row';
   row.innerHTML = `
@@ -614,36 +681,36 @@ function buildAdminRow(server, mode) {
     </div>
     <div class="admin-row__actions">${actions}</div>
   `;
-
-  // Wire buttons
+ 
   if (mode === 'pending') {
     row.querySelector('.btn--approve').addEventListener('click', () => approveServer(server.id, name));
     row.querySelector('.btn--reject').addEventListener('click',  () => openAdminDelete(server.id, name, 'pending'));
   } else {
     row.querySelector('.btn--reject').addEventListener('click',  () => openAdminDelete(server.id, name, 'active'));
   }
-
+ 
   return row;
 }
-
-/* ── Approve ── */
+ 
 async function approveServer(id, name) {
   const { error } = await supabase
     .from('servers').update({ approved: true }).eq('id', id);
-  if (error) { showToast('❌ فشل القبول: ' + error.message, 'error'); return; }
+ 
+  if (error) {
+    console.error('Approve error:', error);
+    showToast('❌ فشل القبول: ' + error.message, 'error');
+    return;
+  }
   showToast(`✅ تم قبول سيرفر "${name}" بنجاح`, 'success');
-  // Move from pending to active locally
   const srv = adminPending.find(s => s.id === id);
   adminPending = adminPending.filter(s => s.id !== id);
   if (srv) adminActive.unshift({ ...srv, approved: true });
   renderAdminPending();
   renderAdminActive();
   updateAdminStats();
-  // Refresh main grid too
   await fetchServers();
 }
-
-/* ── Admin Delete ── */
+ 
 function openAdminDelete(id, name, mode) {
   adminDeleteId = { id, mode };
   adminDeleteMsg.textContent = `هل تريد حذف سيرفر "${name}" نهائياً؟ لا يمكن التراجع.`;
@@ -653,19 +720,23 @@ function closeAdminDelete() {
   adminDeleteId = null;
   adminDeleteModal.classList.add('hidden');
 }
-
+ 
 async function confirmAdminDelete() {
   if (!adminDeleteId) return;
   const { id, mode } = adminDeleteId;
-
+ 
   const { error } = await supabase.from('servers').delete().eq('id', id);
   closeAdminDelete();
-  if (error) { showToast('❌ فشل الحذف: ' + error.message, 'error'); return; }
-
+ 
+  if (error) {
+    console.error('Admin delete error:', error);
+    showToast('❌ فشل الحذف: ' + error.message, 'error');
+    return;
+  }
+ 
   if (mode === 'pending') {
-    const srv = adminPending.find(s => s.id === id);
     adminPending = adminPending.filter(s => s.id !== id);
-    showToast(`🗑️ تم رفض وحذف السيرفر`, 'info');
+    showToast('🗑️ تم رفض وحذف السيرفر', 'info');
     renderAdminPending();
   } else {
     adminActive = adminActive.filter(s => s.id !== id);
@@ -676,21 +747,18 @@ async function confirmAdminDelete() {
   }
   updateAdminStats();
 }
-
+ 
 /* ── Admin Event Listeners ── */
 $('btnAdminPanel').addEventListener('click', openAdminPanel);
 $('closeAdmin').addEventListener('click', closeAdminPanel);
 adminOverlay.addEventListener('click', e => { if (e.target === adminOverlay) closeAdminPanel(); });
-
-// Tab nav
+ 
 document.querySelectorAll('.admin-nav-btn').forEach(btn => {
   btn.addEventListener('click', () => switchAdminTab(btn.dataset.tab));
 });
-
-// Refresh pending
+ 
 $('refreshPending').addEventListener('click', loadAdminPending);
-
-// Admin search (active servers)
+ 
 let adminSearchTimer;
 $('adminSearch').addEventListener('input', e => {
   clearTimeout(adminSearchTimer);
@@ -699,23 +767,16 @@ $('adminSearch').addEventListener('input', e => {
     renderAdminActive();
   }, 250);
 });
-
-// Admin delete modal
+ 
 $('adminCancelDelete').addEventListener('click', closeAdminDelete);
 $('adminConfirmDelete').addEventListener('click', confirmAdminDelete);
 adminDeleteModal.addEventListener('click', e => {
   if (e.target === adminDeleteModal) closeAdminDelete();
 });
-
-// ESC closes admin too
+ 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeAdminPanel();
     closeAdminDelete();
   }
-});
-
-// Print user ID to console for easy setup
-supabase.auth.getSession().then(({ data: { session } }) => {
-  if (session?.user) console.log('🔑 Your Discord User ID:', session.user.id);
 });
