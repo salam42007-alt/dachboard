@@ -19,7 +19,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
   انسخه وضعه هنا
 */
 const OWNER_IDS = [
-  // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+  // '720a9c00-b931-4011-8ca6-fcae961a377b',
 ];
 
 /* ─────────────────────────────────────────────────────
