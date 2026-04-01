@@ -780,3 +780,7 @@ document.addEventListener('keydown', e => {
     closeAdminDelete();
   }
 });
+
+// اجعل الـ functions متاحة لـ window
+window.handleLogin = signIn;
+window.handleLogout = signOut;
