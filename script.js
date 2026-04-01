@@ -9,7 +9,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
    1. CONFIG  ← ضع بياناتك هنا
 ─────────────────────────────────────────────────────────────── */
 const SUPABASE_URL      = 'https://voagykakapoxiycbaxbm.supabase.co';  // ← غيّر هذا
-const SUPABASE_ANON_KEY = 'sb_publishable_Q6hATwZZS6C6_vCKyIRIkQ_VXhWQy8M';                  // ← غيّر هذا
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYWd5a2FrYXBveGl5Y2JheGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MDQ3MjQsImV4cCI6MjA5MDI4MDcyNH0.MuAYGdHy5aQb2xLHsnb2NrP5P5QNUtPR9IPUgdUclJM';                  // ← غيّر هذا
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
