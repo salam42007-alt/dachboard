@@ -1,25 +1,41 @@
 /* ═══════════════════════════════════════════════════════
+
    SERVERHUB – SCRIPT.JS
+
    Supabase · Discord OAuth · Realtime · Admin Panel
+
 ═══════════════════════════════════════════════════════ */
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 /* ─────────────────────────────────────────────────────
+
    ⚙️  CONFIG — غيّر هذين فقط
+
    SUPABASE_ANON_KEY يبدأ بـ eyJ من: Settings → API
+
 ───────────────────────────────────────────────────── */
-const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJ...';
+
+const SUPABASE_URL      = 'https://voagykakapoxiycbaxbm.supabase.co';
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYWd5a2FrYXBveGl5Y2JheGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MDQ3MjQsImV4cCI6MjA5MDI4MDcyNH0.MuAYGdHy5aQb2xLHsnb2NrP5P5QNUtPR9IPUgdUclJM';
 
 /*
+
   🛡️  OWNER IDs
+
   بعد أول تسجيل دخول، افتح Console وستجد:
+
   👤 Your UUID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
   انسخه وضعه هنا
+
 */
+
 const OWNER_IDS = [
-  // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+
+  // '720a9c00-b931-4011-8ca6-fcae961a377b',
+
 ];
 
 /* ─────────────────────────────────────────────────────
